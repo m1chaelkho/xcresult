@@ -8,7 +8,9 @@ module XCResult
     attr_accessor :path, :result_bundle_json, :actions_invocation_record
 
     def initialize(path: nil)
-      @path = Shellwords.escape(path)
+      # Convert to absolute path to work around xcresulttool 24408+ bug with relative paths
+      absolute_path = File.expand_path(path)
+      @path = Shellwords.escape(absolute_path)
 
       result_bundle_json_raw = get_result_bundle_json
       @result_bundle_json = JSON.parse(result_bundle_json_raw)
@@ -110,8 +112,23 @@ module XCResult
     end
 
     def execute_cmd(cmd)
+      if ENV['XCRESULT_DEBUG']
+        puts "Executing command: #{cmd}"
+      end
+      
       output = `#{cmd}`
-      raise "Failed to execute - #{cmd}" unless $?.success?
+      exit_status = $?.exitstatus
+      
+      if ENV['XCRESULT_DEBUG']
+        puts "Exit status: #{exit_status}"
+        puts "Output length: #{output.length}"
+      end
+      
+      unless $?.success?
+        error_msg = "Failed to execute - #{cmd}\nExit status: #{exit_status}"
+        error_msg += "\nOutput: #{output}" if output && !output.empty?
+        raise error_msg
+      end
 
       output
     end
