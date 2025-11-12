@@ -92,7 +92,9 @@ module XCResult
       version = match ? match[:version]&.to_f : nil
 
       # If version string does not match expected format, assume legacy is required
-      requires_legacy = version.nil? || version >= 23_021.0
+      # Legacy flag is required for versions between 23_021.0 and 24408.0
+      # Starting from version 24408 (Xcode 26.1), legacy flag is no longer needed
+      requires_legacy = version.nil? || (version >= 23_021.0 && version < 24408.0)
       legacy_flag = requires_legacy ? ' --legacy' : ''
   
       cmd = "xcrun xcresulttool #{subcommand}#{legacy_flag} #{args}"
