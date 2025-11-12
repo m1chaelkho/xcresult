@@ -87,15 +87,22 @@ module XCResult
       # xcresulttool version 23024, format version 3.53 (current)
       # xcresulttool version 24051.1, schema version: 0.1.0 (legacy commands format version: 3.53)
       # xcresulttool version 24408, schema version: 0.1.0 (legacy commands format version: 3.56)
-      match = `xcrun xcresulttool version`.match(/xcresulttool version (?<version>\d+(\.\d+)?),/)
+      version_output = `xcrun xcresulttool version`
+      match = version_output.match(/xcresulttool version (?<version>\d+(\.\d+)?),/)
 
       version = match ? match[:version]&.to_f : nil
 
       # If version string does not match expected format, assume legacy is required
-      # Legacy flag is required for versions between 23_021.0 and 24408.0
-      # Starting from version 24408 (Xcode 26.1), legacy flag is no longer needed
-      requires_legacy = version.nil? || (version >= 23_021.0 && version < 24408.0)
+      # Legacy flag is required for versions >= 23_021.0 (including Xcode 26.1)
+      requires_legacy = version.nil? || version >= 23_021.0
       legacy_flag = requires_legacy ? ' --legacy' : ''
+
+      # Debug output if environment variable is set
+      if ENV['XCRESULT_DEBUG']
+        puts "xcresulttool version output: #{version_output.inspect}"
+        puts "Parsed version: #{version.inspect}"
+        puts "Requires legacy: #{requires_legacy}"
+      end
   
       cmd = "xcrun xcresulttool #{subcommand}#{legacy_flag} #{args}"
     end
