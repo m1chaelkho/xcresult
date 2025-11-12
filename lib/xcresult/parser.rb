@@ -92,16 +92,18 @@ module XCResult
 
       version = match ? match[:version]&.to_f : nil
 
-      # If version string does not match expected format, assume legacy is required
-      # Legacy flag is required for versions >= 23_021.0 (including Xcode 26.1)
-      requires_legacy = version.nil? || version >= 23_021.0
-      legacy_flag = requires_legacy ? ' --legacy' : ''
-
-      # Debug output if environment variable is set
-      if ENV['XCRESULT_DEBUG']
-        puts "xcresulttool version output: #{version_output.inspect}"
-        puts "Parsed version: #{version.inspect}"
-        puts "Requires legacy: #{requires_legacy}"
+      # Starting from version 24408 (Xcode 26.1), the command structure changed
+      # "get" became "get object" and requires --legacy flag
+      if !version.nil? && version >= 24408.0
+        # For Xcode 26.1+, use new command structure with object type
+        subcommand = "#{subcommand} object" if subcommand == "get"
+        legacy_flag = ' --legacy'
+      elsif version.nil? || version >= 23_021.0
+        # For Xcode 15-26, use legacy flag with old command structure
+        legacy_flag = ' --legacy'
+      else
+        # For older versions, no legacy flag needed
+        legacy_flag = ''
       end
   
       cmd = "xcrun xcresulttool #{subcommand}#{legacy_flag} #{args}"
